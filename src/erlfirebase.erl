@@ -45,24 +45,25 @@ push(DeviceId, Title, Body, Opts, NotificationPID) ->
 init([]) ->
     {ok, #state{}}.
 
-handle_cast(Msg, {apikey=ApiKey}) when ApiKey =:= undefined ->
-    case application:get_env(?APPNAME, appkey) of
-        {ok, AppKey} when is_binary(AppKey) -> handle_cast(Msg, #state{apikey=ApiKey});
-        {ok, AppKey} when is_list(AppKey) -> Key = list_to_binary(ApiKey),
+handle_cast(Msg, {state,undefined} = State) ->
+    case application:get_env(?APPNAME, apikey) of
+        {ok, ApiKey} when is_binary(ApiKey) -> handle_cast(Msg, #state{apikey=ApiKey});
+        {ok, ApiKey} when is_list(ApiKey) -> Key = list_to_binary(ApiKey),
             handle_cast(Msg, #state{apikey=Key});
-        _ -> lager:error("API key is invalid or not provided")
+        _ -> lager:error("API key is invalid or not provided"),
+            {noreply, State}
     end;
 
 handle_cast({Op, {DeviceId, Title, Body, Opts, NotificationPID}}, 
-            #state{apikey=AppKey}=State) ->
+            #state{apikey=ApiKey}=State) ->
     Msg = [{<<"title">>, Title},
         {<<"body">>,Body}] ++ Opts,
-    MessBody = jsx:minify(jsx:encode([{<<"notification">>, [Msg]},
+    MessBody = jsx:minify(jsx:encode([{<<"notification">>, Msg},
                 {<<"to">>, DeviceId}
             ])),
-    AppKey = binary_to_list(State#state.apikey),
+    ApiKeyString = binary_to_list(State#state.apikey),
     case catch httpc:request(post, 
-        {?URL, [{"Authorization", "key=" ++ AppKey}], "application/json", 
+        {?URL, [{"Authorization", "key=" ++ ApiKeyString}], "application/json", 
           binary_to_list(MessBody)}, [], []) of
         {ok, {{"HTTP/1.1",200,"OK"}, _, JSON}} ->
             lager:info("firebase accepted: ~p", [JSON]);

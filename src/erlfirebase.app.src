@@ -1,12 +1,16 @@
 {application, erlfirebase,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "Firebase Cloud Messaging client"},
+  {vsn, "1.0"},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  jsx,
+                  lager,
+                  ssl,
+                  inets
                  ]},
   {mod, { erlfirebase_app, []}},
-  {env, []}
+  {env, [{inets, [{services, [{httpc, []}]}]}]}
  ]}.

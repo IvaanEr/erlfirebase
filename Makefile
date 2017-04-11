@@ -14,3 +14,5 @@ test: deps compile
 clean:
 	${REBAR} clean
 	rm -rf deps
+run:
+	erl -pa ebin deps/jsx/ebin deps/lager/ebin -eval "application:start(erlfirebase)"

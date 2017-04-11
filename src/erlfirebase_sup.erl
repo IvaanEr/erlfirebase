@@ -19,13 +19,13 @@
 %% ===================================================================
 
 start_link() ->
-    mnesia:create_schema([node()]),
-    mnesia:change_table_copy_type(schema, node(), disc_copies), 
-    mnesia:start(),
-    mnesia:create_table(request,
-    [ {disc_copies, [node()] },
-         {attributes,      
-            record_info(fields, request)} ]),
+    % mnesia:create_schema([node()]),
+    % mnesia:change_table_copy_type(schema, node(), disc_copies), 
+    % mnesia:start(),
+    % mnesia:create_table(request,
+    % [ {disc_copies, [node()] },
+    %      {attributes,      
+    %         record_info(fields, request)} ]),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %% ===================================================================
