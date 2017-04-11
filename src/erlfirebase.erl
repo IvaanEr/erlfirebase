@@ -9,9 +9,10 @@
 %% ------------------------------------------------------------------
 
 -export([start_link/0,
-		 push/3,
-		 push/4,
-		 push/5
+         push/3,
+         push/4,
+         push/5,
+         unixtime/0
         ]).
 
 %% ------------------------------------------------------------------
@@ -29,14 +30,15 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 push(DeviceId, Title, Body) ->
-	gen_server:cast(?MODULE, {push, {DeviceId, Title, Body, [], undefined}}).
+    gen_server:cast(?MODULE, {push, {DeviceId, Title, Body, [], undefined}}).
 
 push(DeviceId, Title, Body, Opts) ->
-	gen_server:cast(?MODULE, {push, {DeviceId, Title, Body, Opts, undefined}}).
+    gen_server:cast(?MODULE, {push, {DeviceId, Title, Body, Opts, undefined}}).
 
+% NotificationPID is for future extension
 push(DeviceId, Title, Body, Opts, NotificationPID) ->
-	gen_server:cast(?MODULE, {push, {DeviceId, Title, Body, Opts, NotificationPID}}).
-	
+    gen_server:cast(?MODULE, {push, {DeviceId, Title, Body, Opts, NotificationPID}}).
+    
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
@@ -54,8 +56,7 @@ handle_cast(Msg, {state,undefined} = State) ->
             {noreply, State}
     end;
 
-handle_cast({Op, {DeviceId, Title, Body, Opts, NotificationPID}}, 
-            #state{apikey=ApiKey}=State) ->
+handle_cast({push, {DeviceId, Title, Body, Opts, _}}, State) ->
     Msg = [{<<"title">>, Title},
         {<<"body">>,Body}] ++ Opts,
     MessBody = jsx:minify(jsx:encode([{<<"notification">>, Msg},
