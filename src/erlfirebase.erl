@@ -9,6 +9,7 @@
 %% ------------------------------------------------------------------
 
 -export([start_link/0,
+         push_raw_data/2,
          push/3,
          push/4,
          push/5,
@@ -28,6 +29,9 @@
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+push_raw_data(DeviceId, Message) ->
+    gen_server:cast(?MODULE, {push_raw_data, {DeviceId, Message, undefined}}).
 
 push(DeviceId, Title, Body) ->
     gen_server:cast(?MODULE, {push, {DeviceId, Title, Body, [], undefined}}).
@@ -56,12 +60,17 @@ handle_cast(Msg, {state,undefined} = State) ->
             {noreply, State}
     end;
 
-handle_cast({push, {DeviceId, Title, Body, Opts, _}}, State) ->
-    Msg = [{<<"title">>, Title},
-        {<<"body">>,Body}] ++ Opts,
-    MessBody = jsx:minify(jsx:encode([{<<"notification">>, Msg},
-                {<<"to">>, DeviceId}
-            ])),
+handle_cast({push, {DeviceId, Title, Body, Opts, NotificationPID}}, State) ->
+    Msg = if Title =:= <<>> orelse Title =:= undefined ->
+                [{<<"body">>,Body}] ++ Opts;
+            true -> [{<<"title">>, Title},
+                     {<<"body">>,Body}] ++ Opts
+          end,
+    handle_cast({push_raw_data, 
+        {DeviceId, [{<<"notification">>, Msg}], NotificationPID}}, State);
+
+handle_cast({push_raw_data, {DeviceId, Msg, _NotificationPID}}, State) ->
+    MessBody = jsx:minify(jsx:encode(Msg ++ [{<<"to">>, DeviceId}])),
     ApiKeyString = binary_to_list(State#state.apikey),
     case catch httpc:request(post, 
         {?URL, [{"Authorization", "key=" ++ ApiKeyString}], "application/json", 
